@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request
-from app.schemas import SafetyAlertOut
+from app.schemas import SafetyAlertOut, IncidentLogIn, IncidentOut
 from app.filters import latest_golden_row
 from app.rules import evaluate_safety
+from app.store import update_row, persist
 
 router = APIRouter()
 
@@ -35,5 +36,44 @@ def list_safety_events(request: Request, machine_id: str = None, operator_id: st
         df = df[df['machine_id'] == machine_id]
     if operator_id:
         df = df[df['operator_id'] == operator_id]
-        
     return df.to_dict(orient='records')
+
+@router.post("/events/{event_id}/log_incident", response_model=IncidentOut)
+def log_incident(event_id: str, incident: IncidentLogIn, request: Request):
+    df = request.app.state.data.get("safety_events")
+    if df is None or df.empty:
+        raise HTTPException(status_code=404, detail="Safety events data not found")
+        
+    if not (df['event_id'] == event_id).any():
+        raise HTTPException(status_code=404, detail=f"Safety event {event_id} not found")
+        
+    # TODO: Gemini summarization of the incident will be added here in Phase 5
+    
+    updates = {
+        'resolved': True,
+        'note': incident.note
+    }
+    
+    updated_df = update_row(df, 'event_id', event_id, updates)
+    request.app.state.data["safety_events"] = updated_df
+    
+    try:
+        persist(updated_df, "safety_events.csv")
+    except Exception as e:
+        print(f"Failed to persist safety events: {e}")
+        
+    updated_row = updated_df[updated_df['event_id'] == event_id].iloc[0]
+    return updated_row.to_dict()
+
+@router.get("/events/{event_id}", response_model=IncidentOut)
+def get_incident(event_id: str, request: Request):
+    df = request.app.state.data.get("safety_events")
+    if df is None or df.empty:
+        raise HTTPException(status_code=404, detail="Safety events data not found")
+        
+    events = df[df['event_id'] == event_id]
+    if events.empty:
+        raise HTTPException(status_code=404, detail=f"Safety event {event_id} not found")
+        
+    return events.iloc[0].to_dict()
+

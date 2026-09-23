@@ -82,3 +82,42 @@ class IdleReasonIn(BaseSchema):
         "scheduled_break", 
         "other"
     ]
+
+class CheckpointIn(BaseSchema):
+    progress_pct: float
+    cycles_completed: int
+    notes: Optional[str] = None
+    event_type: Literal["pause", "handover", "auto"]
+
+class CheckpointOut(BaseSchema):
+    task_id: str
+    checkpoint_time: str
+    progress_pct: float
+    cycles_completed: int
+    notes: Optional[str] = None
+    event_type: str
+    operator_id: str
+
+class ResumeBriefingOut(BaseSchema):
+    task_id: str
+    task_name: str
+    zone: Optional[str] = None
+    progress_pct: float
+    cycles_completed: int
+    total_cycles: Optional[int] = None
+    ground_condition: Optional[str] = None
+    last_note: Optional[str] = None
+    briefing_sentence: str
+
+class IncidentLogIn(BaseSchema):
+    note: Optional[str] = None
+
+class IncidentOut(BaseSchema):
+    event_id: str
+    machine_id: str
+    operator_id: str
+    timestamp: str
+    event_type: str
+    severity: str
+    resolved: bool
+    note: Optional[str] = None

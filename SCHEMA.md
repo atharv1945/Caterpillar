@@ -72,6 +72,7 @@ Powers seatbelt/proximity alert + incident summary.
 - `event_type`: Type of safety event (e.g., seatbelt_unfastened).
 - `severity`: Severity level (e.g., high, medium, low).
 - `resolved`: Boolean indicating if the event has been resolved.
+- `note`: String containing the incident log note.
 
 ## 8. training_content.csv
 Powers training hub.

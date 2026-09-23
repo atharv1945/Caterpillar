@@ -1,2 +1,2 @@
-event_id,machine_id,operator_id,timestamp,event_type,severity,resolved
-SE001,EXC001,OP1001,2024-10-01 09:50:00,seatbelt_unfastened,high,False
+event_id,machine_id,operator_id,timestamp,event_type,severity,resolved,note
+SE001,EXC001,OP1001,2024-10-01 09:50:00,seatbelt_unfastened,high,True,Operator checked radio

@@ -2,8 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from app.schemas import IdleEventOut, IdleReasonIn
 import pandas as pd
 from datetime import datetime
-import os
-from app.config import DATA_DIR
+from app.store import update_row, persist
 
 router = APIRouter()
 
@@ -30,25 +29,26 @@ def update_idle_reason(idle_event_id: str, reason: IdleReasonIn, request: Reques
     if df is None or df.empty:
         raise HTTPException(status_code=404, detail="Idle events data not found")
         
-    idx = df[df['idle_event_id'] == idle_event_id].index
-    if len(idx) == 0:
+    if not (df['idle_event_id'] == idle_event_id).any():
         raise HTTPException(status_code=404, detail=f"Idle event {idle_event_id} not found")
         
-    row_idx = idx[0]
+    updates = {
+        'idle_reason_code': reason.reason_code,
+        'reason_source': "operator"
+    }
     
-    # Update in memory
-    df.at[row_idx, 'idle_reason_code'] = reason.reason_code
-    df.at[row_idx, 'reason_source'] = "operator"
-    
-    current_end = df.at[row_idx, 'idle_end']
+    current_end = df.loc[df['idle_event_id'] == idle_event_id, 'idle_end'].values[0]
     if pd.isna(current_end) or current_end == "":
-        df.at[row_idx, 'idle_end'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        updates['idle_end'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
+    updated_df = update_row(df, 'idle_event_id', idle_event_id, updates)
+    request.app.state.data["idle_events"] = updated_df
+    
     # Persist back to CSV (for hackathon persistence)
     try:
-        csv_path = os.path.join(DATA_DIR, "idle_events.csv")
-        df.to_csv(csv_path, index=False)
+        persist(updated_df, "idle_events.csv")
     except Exception as e:
         print(f"Failed to persist idle events: {e}")
         
-    return df.loc[row_idx].to_dict()
+    updated_row = updated_df[updated_df['idle_event_id'] == idle_event_id].iloc[0]
+    return updated_row.to_dict()
