@@ -23,9 +23,11 @@ app = FastAPI(title="CAT Operator AI Companion API", lifespan=lifespan)
 def health_check():
     return {"status": "ok"}
 
-from app.routers import operators, machines, tasks, telemetry
+from app.routers import operators, machines, tasks, telemetry, safety, idle_events
 
 app.include_router(operators.router, prefix="/operators", tags=["operators"])
 app.include_router(machines.router, prefix="/machines", tags=["machines"])
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 app.include_router(telemetry.router, prefix="/telemetry", tags=["telemetry"])
+app.include_router(safety.router, prefix="/safety", tags=["safety"])
+app.include_router(idle_events.router, prefix="/idle_events", tags=["idle_events"])

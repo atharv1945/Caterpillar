@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_validator
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Literal
 import math
 
 class BaseSchema(BaseModel):
@@ -54,3 +54,31 @@ class DashboardResponse(BaseSchema):
     now: Optional[TaskOut] = None
     next: Optional[TaskOut] = None
     later: List[TaskOut] = []
+
+class SafetyAlertOut(BaseSchema):
+    triggered: bool
+    severity: str
+    message: str
+    task_id: str
+    timestamp: str
+
+class IdleEventOut(BaseSchema):
+    idle_event_id: str
+    machine_id: str
+    operator_id: str
+    task_id: str
+    idle_start: str
+    idle_end: Optional[str] = None
+    duration_min: Optional[int] = None
+    idle_reason_code: Optional[str] = None
+    reason_source: Optional[str] = None
+
+class IdleReasonIn(BaseSchema):
+    reason_code: Literal[
+        "waiting_truck_material", 
+        "waiting_instructions", 
+        "mechanical_issue", 
+        "weather_site_condition", 
+        "scheduled_break", 
+        "other"
+    ]
