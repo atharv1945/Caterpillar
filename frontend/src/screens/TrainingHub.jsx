@@ -4,11 +4,23 @@ import Icon from "../components/Icon";
 import ChatThread from "../components/ChatThread";
 import { training_content, training_qa } from "../mockData";
 
+const VIDEO_DURATION_MS = 9000;
+
 export default function TrainingHub() {
-  const [playing, setPlaying] = useState(false);
+  const [videoState, setVideoState] = useState("idle"); // idle | playing | done
   const [callState, setCallState] = useState("idle"); // idle | connecting | connected
   const [visibleCount, setVisibleCount] = useState(0);
   const video = training_content[0];
+
+  // No real video file exists for the demo — rather than a spinner that
+  // spins forever regardless of whether anyone's watching, this plays a
+  // fixed-length placeholder progress bar and lands on a clear "done" state,
+  // so it reads as an intentional short lesson rather than a broken stub.
+  useEffect(() => {
+    if (videoState !== "playing") return;
+    const t = setTimeout(() => setVideoState("done"), VIDEO_DURATION_MS);
+    return () => clearTimeout(t);
+  }, [videoState]);
 
   // Pre-scripted Q&A bubbles appear one at a time — no live STT/TTS, just a
   // short reveal delay so the exchange feels like it's happening live.
@@ -32,10 +44,10 @@ export default function TrainingHub() {
       <div className="relative aspect-video overflow-hidden rounded-3xl border border-white/10 bg-surface-2 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-cat-yellow/15 via-transparent to-black/40" />
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
-          {!playing ? (
+          {videoState === "idle" && (
             <>
               <motion.button
-                onClick={() => setPlaying(true)}
+                onClick={() => setVideoState("playing")}
                 whileTap={{ scale: 0.9 }}
                 className="flex h-16 w-16 items-center justify-center rounded-full bg-cat-yellow text-cat-black shadow-lg"
               >
@@ -44,18 +56,34 @@ export default function TrainingHub() {
               <p className="text-sm font-semibold text-ink">{video.title}</p>
               <p className="text-xs text-ink-dim">{video.duration_min} min · {video.language.toUpperCase()}</p>
             </>
-          ) : (
+          )}
+          {videoState === "playing" && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex flex-col items-center gap-3"
+              className="flex w-full max-w-[220px] flex-col items-center gap-3"
             >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
-                className="h-10 w-10 rounded-full border-4 border-white/15 border-t-cat-yellow"
-              />
               <p className="text-sm font-medium text-ink-dim">Playing “{video.title}”…</p>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                <motion.div
+                  className="h-full rounded-full bg-cat-yellow"
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: VIDEO_DURATION_MS / 1000, ease: "linear" }}
+                />
+              </div>
+            </motion.div>
+          )}
+          {videoState === "done" && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success/20 text-success">
+                <Icon name="check" size={28} />
+              </div>
+              <p className="text-sm font-semibold text-ink">Watched — {video.title}</p>
             </motion.div>
           )}
         </div>

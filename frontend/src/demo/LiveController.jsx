@@ -12,7 +12,7 @@ import {
   TRAINING_DISPLAY_MS,
   RECOVERY_MILESTONES,
 } from "./timeline";
-import { tasks } from "../mockData";
+import { tasks, bob_captions } from "../mockData";
 import IntroSequence from "./IntroSequence";
 import BottomRightBob from "../components/BottomRightBob";
 import ChatOverlay from "../components/ChatOverlay";
@@ -24,8 +24,30 @@ import ResumeHandover from "../screens/ResumeHandover";
 import CriticalAlert from "../screens/CriticalAlert";
 import IdleReasonPicker from "../screens/IdleReasonPicker";
 import { playListeningChime, playCriticalAlert } from "../utils/sound";
+import { api } from "../utils/api";
+import { getValueOrFallback } from "../utils/getValueOrFallback";
 
 const BASE_TASK = tasks.find((t) => t.status === "NOW");
+
+// The backend's demo data is only wired up for TSK001 (ml_bridge, scene_state,
+// and the golden telemetry rows all hardcode it as "the" live task) — even
+// though /tasks/dashboard's own "now" task is TSK002. We key every backend
+// call to TSK001 to match everything else the backend assumes.
+const BACKEND_TASK_ID = "TSK001";
+// Likewise, the seed data only has one safety event to acknowledge against.
+const BACKEND_SAFETY_EVENT_ID = "SE001";
+
+// Frontend reason chips use their own short codes; the backend's
+// IdleReasonIn schema expects a different Literal vocabulary. Mapped here so
+// nothing else in the UI needs to know about the backend's naming.
+const IDLE_REASON_TO_BACKEND = {
+  WAITING_TRUCK: "waiting_truck_material",
+  WAITING_INSTRUCTIONS: "waiting_instructions",
+  MECHANICAL_ISSUE: "mechanical_issue",
+  WEATHER: "weather_site_condition",
+  BREAK: "scheduled_break",
+  OTHER: "other",
+};
 
 const pageVariants = {
   initial: { opacity: 0, y: 14 },
@@ -46,9 +68,21 @@ export default function LiveController() {
   const [elapsed, setElapsed] = useState(0);
   const [idleOverlayOpen, setIdleOverlayOpen] = useState(false);
   const [idleAcked, setIdleAcked] = useState(false);
+  const [idleReasonCode, setIdleReasonCode] = useState(null);
   const [criticalOverlayOpen, setCriticalOverlayOpen] = useState(false);
   const [criticalAcked, setCriticalAcked] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+
+  // Real backend data, layered over the local timeline.js computation via
+  // getValueOrFallback — null means "no good backend answer yet," which
+  // falls straight through to the existing local/hardcoded value. Nothing
+  // here ever blocks rendering; every fetch is fire-and-forget.
+  const [backendEta, setBackendEta] = useState(null);
+  const [backendBehaviorMessage, setBackendBehaviorMessage] = useState(null);
+  const [backendIdleDuration, setBackendIdleDuration] = useState(null);
+  const [backendSafety, setBackendSafety] = useState(null);
+  const [backendBriefing, setBackendBriefing] = useState(null);
+  const backendIdleEventIdRef = useRef(null);
 
   const pausedRef = useRef(false);
 
@@ -67,6 +101,28 @@ export default function LiveController() {
     return () => clearInterval(id);
   }, [phase]);
 
+  // Live ETA — polled once per second (same cadence as the clock tick),
+  // paused whenever the clock itself is paused so a chat/overlay doesn't
+  // keep firing wasted requests. A stale/slow response is dropped via the
+  // request-id guard so it can never overwrite a newer one.
+  useEffect(() => {
+    if (phase !== "live") return;
+    let cancelled = false;
+    let requestId = 0;
+    const id = setInterval(() => {
+      if (pausedRef.current) return;
+      const myRequestId = ++requestId;
+      api.getEta(BACKEND_TASK_ID).then((res) => {
+        if (cancelled || myRequestId !== requestId) return;
+        setBackendEta(res?.eta_minutes ?? null);
+      });
+    }, 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [phase]);
+
   // Idle detection fires itself the moment the threshold is crossed.
   useEffect(() => {
     if (elapsed >= IDLE_THRESHOLD_T && !idleAcked && !idleOverlayOpen) {
@@ -74,6 +130,24 @@ export default function LiveController() {
       playListeningChime();
     }
   }, [elapsed, idleAcked, idleOverlayOpen]);
+
+  // Real idle-event data, fetched once when the sheet opens. Also stashes the
+  // event id in a ref (not state — it's only ever read inside resolveIdle's
+  // fire-and-forget POST, so it doesn't need to trigger a re-render or sit
+  // in resolveIdle's own dependency list) so the reason we log back can
+  // target the real event instead of a hardcoded id.
+  useEffect(() => {
+    if (!idleOverlayOpen) return;
+    let cancelled = false;
+    api.getActiveIdleEvent(BACKEND_TASK_ID).then((res) => {
+      if (cancelled) return;
+      setBackendIdleDuration(res?.duration_min ?? null);
+      backendIdleEventIdRef.current = res?.idle_event_id ?? null;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [idleOverlayOpen]);
 
   // Safety event fires itself the moment its threshold is crossed.
   useEffect(() => {
@@ -83,14 +157,39 @@ export default function LiveController() {
     }
   }, [elapsed, criticalAcked, criticalOverlayOpen]);
 
-  const resolveIdle = useCallback(() => {
+  // Real safety-check data, fetched once when the alert opens.
+  useEffect(() => {
+    if (!criticalOverlayOpen) return;
+    let cancelled = false;
+    api.checkSafety(BACKEND_TASK_ID).then((res) => {
+      if (!cancelled) setBackendSafety(res);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [criticalOverlayOpen]);
+
+  // Accepts the reason code the operator actually tapped (IdleReasonPicker
+  // passes it through via onSubmit(selected)). The auto-timeout path calls
+  // this with no argument, so it defaults to the same reason the old
+  // hardcoded copy always claimed — a real answer, when there is one, and a
+  // sane default when the operator didn't answer in time.
+  const resolveIdle = useCallback((reasonCode) => {
+    const code = reasonCode ?? "WAITING_TRUCK";
     setIdleAcked(true);
     setIdleOverlayOpen(false);
+    setIdleReasonCode(code);
+    const backendEventId = backendIdleEventIdRef.current;
+    const backendReasonCode = IDLE_REASON_TO_BACKEND[code];
+    if (backendEventId && backendReasonCode) {
+      api.postIdleReason(backendEventId, backendReasonCode);
+    }
   }, []);
 
   const resolveCritical = useCallback(() => {
     setCriticalAcked(true);
     setCriticalOverlayOpen(false);
+    api.logIncident(BACKEND_SAFETY_EVENT_ID, "Operator confirmed seatbelt fastened.");
   }, []);
 
   // A real operator might not tap in time — auto-resolve so the shift keeps
@@ -119,10 +218,34 @@ export default function LiveController() {
     return () => clearTimeout(t);
   }, [isComplete]);
 
+  // Real behavior-insight data, fetched once as soon as the task completes.
+  useEffect(() => {
+    if (!isComplete) return;
+    let cancelled = false;
+    api.getBehaviorInsight(BACKEND_TASK_ID).then((res) => {
+      if (!cancelled) setBackendBehaviorMessage(res?.message ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isComplete]);
+
   useEffect(() => {
     if (currentScreen !== "training") return;
     const t = setTimeout(() => setCurrentScreen("resume"), TRAINING_DISPLAY_MS);
     return () => clearTimeout(t);
+  }, [currentScreen]);
+
+  // Real resume-briefing data, fetched once as the handover screen mounts.
+  useEffect(() => {
+    if (currentScreen !== "resume") return;
+    let cancelled = false;
+    api.getResumeBriefing(BACKEND_TASK_ID).then((res) => {
+      if (!cancelled) setBackendBriefing(res?.briefing_sentence ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [currentScreen]);
 
   const resetAll = useCallback(() => {
@@ -131,9 +254,16 @@ export default function LiveController() {
     setElapsed(0);
     setIdleOverlayOpen(false);
     setIdleAcked(false);
+    setIdleReasonCode(null);
     setCriticalOverlayOpen(false);
     setCriticalAcked(false);
     setChatOpen(false);
+    setBackendEta(null);
+    setBackendBehaviorMessage(null);
+    setBackendIdleDuration(null);
+    setBackendSafety(null);
+    setBackendBriefing(null);
+    backendIdleEventIdRef.current = null;
   }, []);
 
   // Hidden recovery control — force the next key moment to happen right now.
@@ -200,18 +330,45 @@ export default function LiveController() {
     }
   }
 
-  const snapshot = getLiveTaskSnapshot(elapsed);
-  const liveTask = { ...BASE_TASK, ...snapshot };
+  // getLiveTaskSnapshot stays exactly as it was — the pure local fallback.
+  // The real backend ETA is layered on top via getValueOrFallback, gated to
+  // a range close to the local value so a structurally-different-scale
+  // backend number (its model predicts whole-task minutes, not a live
+  // countdown) can't make the display jump nonsensically.
+  const localSnapshot = getLiveTaskSnapshot(elapsed);
+  const resolvedEta = Math.round(
+    getValueOrFallback(backendEta, localSnapshot.eta_min, {
+      min: Math.max(0, localSnapshot.eta_min - 40),
+      max: localSnapshot.eta_min + 40,
+    })
+  );
+  const liveTask = { ...BASE_TASK, ...localSnapshot, eta_min: resolvedEta };
 
-  const { caption, bobState: derivedBobState } = getLiveCaption({
+  let { caption, bobState: derivedBobState } = getLiveCaption({
     screen: currentScreen,
     elapsed,
     idleOpen: idleOverlayOpen,
     idleAcked,
+    idleReasonCode,
     criticalOpen: criticalOverlayOpen,
     criticalAcked,
   });
+  if (isComplete && currentScreen !== "training" && currentScreen !== "resume") {
+    caption = getValueOrFallback(backendBehaviorMessage, caption);
+  }
   const bobState = idleOverlayOpen ? "listening" : criticalOverlayOpen ? "critical" : derivedBobState;
+
+  const idleCaption = getValueOrFallback(
+    backendIdleDuration != null ? `You've been idle for ${backendIdleDuration} minutes. What's going on?` : null,
+    bob_captions.idle
+  );
+  // The backend's rule engine reads the latest golden telemetry row, whose
+  // seatbelt is fastened (only an older row shows unfastened) — so it
+  // legitimately reports "all clear" even during our scripted critical
+  // moment. Only trust its message when it agrees something's triggered;
+  // otherwise its answer would contradict the screen it's shown on.
+  const safetyDetail = getValueOrFallback(backendSafety?.triggered ? backendSafety.message : null, undefined);
+  const resumeBriefing = getValueOrFallback(backendBriefing, undefined);
 
   const showBottomBob = phase === "live" && !idleOverlayOpen && !criticalOverlayOpen && !chatOpen;
 
@@ -261,15 +418,17 @@ export default function LiveController() {
           )}
           {currentScreen === "resume" && (
             <motion.div key="resume" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3, ease: "easeOut" }}>
-              <ResumeHandover caption={caption} ctaLabel="Restart Demo" onContinue={resetAll} />
+              <ResumeHandover caption={caption} ctaLabel="Restart Demo" onContinue={resetAll} briefing={resumeBriefing} />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       <AnimatePresence>
-        {idleOverlayOpen && <IdleReasonPicker key="idle-overlay" onSubmit={resolveIdle} />}
-        {criticalOverlayOpen && <CriticalAlert key="critical-overlay" onAcknowledge={resolveCritical} />}
+        {idleOverlayOpen && <IdleReasonPicker key="idle-overlay" onSubmit={resolveIdle} caption={idleCaption} />}
+        {criticalOverlayOpen && (
+          <CriticalAlert key="critical-overlay" onAcknowledge={resolveCritical} detail={safetyDetail} />
+        )}
       </AnimatePresence>
 
       {showBottomBob && <BottomRightBob state={bobState} caption={caption} onTap={() => setChatOpen(true)} />}

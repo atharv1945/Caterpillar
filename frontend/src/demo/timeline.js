@@ -83,7 +83,7 @@ export function getLiveTaskSnapshot(elapsed) {
 
 // Caption + Bob state cascade — checked most-advanced-condition-first so it
 // always reflects the latest relevant beat without tracking caption history.
-export function getLiveCaption({ screen, elapsed, idleOpen, idleAcked, criticalOpen, criticalAcked }) {
+export function getLiveCaption({ screen, elapsed, idleOpen, idleAcked, idleReasonCode, criticalOpen, criticalAcked }) {
   if (screen === "resume") return { caption: "Nice work today.", bobState: "coaching" };
   if (screen === "training") {
     return { caption: "Here's a quick refresher based on today's ground conditions.", bobState: "coaching" };
@@ -95,10 +95,28 @@ export function getLiveCaption({ screen, elapsed, idleOpen, idleAcked, criticalO
   if (criticalAcked) {
     return { caption: "Incident logged and summarized for your safety officer.", bobState: "coaching" };
   }
-  if (elapsed >= WEATHER_T) return { caption: bob_captions.etaChange, bobState: "coaching" };
+  // Warning (not coaching) for this beat specifically — a real "conditions
+  // changed, pay attention" moment, distinct from the positive/coaching tint
+  // used once things are actually resolved.
+  if (elapsed >= WEATHER_T) return { caption: bob_captions.etaChange, bobState: "warning" };
   if (idleOpen) return { caption: bob_captions.idle, bobState: "listening" };
-  if (idleAcked) return { caption: bob_captions.idleAck, bobState: "normal" };
+  if (idleAcked) {
+    return { caption: IDLE_REASON_ACK_CAPTIONS[idleReasonCode] ?? bob_captions.idleAck, bobState: "normal" };
+  }
   return { caption: bob_captions.taskStart, bobState: "normal" };
 }
+
+// One line per reason chip so the confirmation actually reflects what the
+// operator tapped, instead of a single hardcoded sentence regardless of
+// choice. Falls back to the original generic line for an unrecognized code
+// (e.g. the auto-timeout path, which resolves with no explicit selection).
+export const IDLE_REASON_ACK_CAPTIONS = {
+  WAITING_TRUCK: "Logged — waiting on the truck.",
+  WAITING_INSTRUCTIONS: "Logged — waiting on instructions.",
+  MECHANICAL_ISSUE: "Logged — mechanical issue noted.",
+  WEATHER: "Logged — weather or site conditions noted.",
+  BREAK: "Logged — scheduled break noted.",
+  OTHER: "Logged — noted, thanks for letting me know.",
+};
 
 export const RECOVERY_MILESTONES = [IDLE_THRESHOLD_T, WEATHER_T, SAFETY_T, COMPLETE_T];

@@ -4,7 +4,7 @@ import MascotBob from "../components/MascotBob";
 import ReasonChip from "../components/ReasonChip";
 import { idle_reason_options, bob_captions } from "../mockData";
 
-export default function IdleReasonPicker({ onSubmit }) {
+export default function IdleReasonPicker({ onSubmit, caption = bob_captions.idle }) {
   const [selected, setSelected] = useState(null);
 
   return (
@@ -25,7 +25,7 @@ export default function IdleReasonPicker({ onSubmit }) {
           <MascotBob state="listening" size={56} showCaption={false} />
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-attention">Idle 5 min</p>
-            <p className="text-lg font-bold text-ink">{bob_captions.idle}</p>
+            <p className="text-lg font-bold text-ink">{caption}</p>
           </div>
         </div>
 

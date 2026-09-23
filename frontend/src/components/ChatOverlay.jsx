@@ -102,15 +102,21 @@ export default function ChatOverlay({ open, onClose, liveTask }) {
             )}
 
             <div className="shrink-0 px-5 pb-6">
-              <button
-                onClick={toggleMic}
-                className={`flex w-full items-center gap-2 rounded-full border px-4 py-3 transition-colors ${
-                  listening ? "border-cat-yellow/40 bg-cat-yellow/10 text-cat-yellow" : "border-white/10 bg-surface-2 text-ink-dim"
-                }`}
-              >
-                <Icon name="mic" size={16} />
-                <span className="text-sm">{listening ? "Listening…" : "Tap to ask a question…"}</span>
-              </button>
+              {askedIds.length < chat_quick_questions.length ? (
+                <button
+                  onClick={toggleMic}
+                  className={`flex w-full items-center gap-2 rounded-full border px-4 py-3 transition-colors ${
+                    listening ? "border-cat-yellow/40 bg-cat-yellow/10 text-cat-yellow" : "border-white/10 bg-surface-2 text-ink-dim"
+                  }`}
+                >
+                  <Icon name="mic" size={16} />
+                  <span className="text-sm">{listening ? "Listening…" : "Tap to ask a question…"}</span>
+                </button>
+              ) : (
+                <div className="rounded-full border border-white/10 bg-surface-2 px-4 py-3 text-center text-sm text-ink-dim">
+                  That's everything I've got for this task — ask me again once you're moving.
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>

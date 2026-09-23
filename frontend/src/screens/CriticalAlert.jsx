@@ -3,8 +3,9 @@ import MascotBob from "../components/MascotBob";
 import Icon from "../components/Icon";
 import { safety_events, bob_captions } from "../mockData";
 
-export default function CriticalAlert({ onAcknowledge }) {
+export default function CriticalAlert({ onAcknowledge, caption = bob_captions.critical, detail }) {
   const event = safety_events[0];
+  const detailText = detail ?? event.message;
 
   return (
     <motion.div
@@ -33,9 +34,9 @@ export default function CriticalAlert({ onAcknowledge }) {
       <div className="flex flex-col items-center gap-5">
         <MascotBob state="critical" size={180} showCaption={false} />
         <p className="max-w-xs text-center text-xl font-bold leading-snug text-ink">
-          {bob_captions.critical}
+          {caption}
         </p>
-        <p className="max-w-xs text-center text-sm text-ink-dim">{event.message}</p>
+        <p className="max-w-xs text-center text-sm text-ink-dim">{detailText}</p>
       </div>
 
       <motion.button

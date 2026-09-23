@@ -4,7 +4,7 @@ import Icon from "../components/Icon";
 import TypeOnText from "../components/TypeOnText";
 import { task_checkpoints, tasks, operators, bob_captions } from "../mockData";
 
-export default function ResumeHandover({ caption, ctaLabel = "Continue Task", onContinue }) {
+export default function ResumeHandover({ caption, ctaLabel = "Continue Task", onContinue, briefing }) {
   const task = tasks.find((t) => t.status === "NOW");
   const pause = task_checkpoints.find((c) => c.event_type === "PAUSE");
   const priorOperator = operators.find((o) => o.operator_id === pause.operator_id);
@@ -35,9 +35,13 @@ export default function ResumeHandover({ caption, ctaLabel = "Continue Task", on
 
         <div className="mt-3 flex items-start gap-3 rounded-2xl bg-black/20 p-3">
           <Icon name="clipboard" size={18} className="mt-0.5 text-ink-dim" />
-          <p className="text-sm text-ink-dim">
-            Handed off by <span className="font-semibold text-ink">{priorOperator?.name}</span> at {pause.checkpoint_time}. {pause.notes}
-          </p>
+          {briefing ? (
+            <p className="text-sm text-ink-dim">{briefing}</p>
+          ) : (
+            <p className="text-sm text-ink-dim">
+              Handed off by <span className="font-semibold text-ink">{priorOperator?.name}</span> at {pause.checkpoint_time}. {pause.notes}
+            </p>
+          )}
         </div>
       </div>
 
