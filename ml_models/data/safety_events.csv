@@ -1,0 +1,2 @@
+event_id,machine_id,operator_id,timestamp,event_type,severity,resolved
+EVT001,EXC001,OP001,2024-09-23 13:30:00,seatbelt_unfastened+proximity_breach,High,True

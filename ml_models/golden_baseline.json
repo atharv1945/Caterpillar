@@ -1,0 +1,146 @@
+[
+  {
+    "scene": "normal_work",
+    "eta_minutes": 113.7,
+    "eta_source": "model",
+    "is_anomalous": true,
+    "beh_score": -0.571,
+    "beh_source": "model"
+  },
+  {
+    "scene": "normal_work",
+    "eta_minutes": 113.7,
+    "eta_source": "model",
+    "is_anomalous": true,
+    "beh_score": -0.564,
+    "beh_source": "model"
+  },
+  {
+    "scene": "normal_work",
+    "eta_minutes": 103.8,
+    "eta_source": "model",
+    "is_anomalous": true,
+    "beh_score": -0.5638,
+    "beh_source": "model"
+  },
+  {
+    "scene": "normal_work",
+    "eta_minutes": 103.8,
+    "eta_source": "model",
+    "is_anomalous": true,
+    "beh_score": -0.5491,
+    "beh_source": "model"
+  },
+  {
+    "scene": "normal_work",
+    "eta_minutes": 70.5,
+    "eta_source": "model",
+    "is_anomalous": false,
+    "beh_score": -0.5303,
+    "beh_source": "model"
+  },
+  {
+    "scene": "idle_event",
+    "eta_minutes": 130.9,
+    "eta_source": "model",
+    "is_anomalous": false,
+    "beh_score": -0.5047,
+    "beh_source": "model"
+  },
+  {
+    "scene": "idle_recovery",
+    "eta_minutes": 127.4,
+    "eta_source": "model",
+    "is_anomalous": false,
+    "beh_score": -0.54,
+    "beh_source": "model"
+  },
+  {
+    "scene": "ground_wet_slowdown",
+    "eta_minutes": 122.0,
+    "eta_source": "model",
+    "is_anomalous": false,
+    "beh_score": -0.5407,
+    "beh_source": "model"
+  },
+  {
+    "scene": "ground_wet_slowdown",
+    "eta_minutes": 133.9,
+    "eta_source": "model",
+    "is_anomalous": true,
+    "beh_score": -0.5504,
+    "beh_source": "model"
+  },
+  {
+    "scene": "ground_wet_slowdown",
+    "eta_minutes": 133.9,
+    "eta_source": "model",
+    "is_anomalous": false,
+    "beh_score": -0.547,
+    "beh_source": "model"
+  },
+  {
+    "scene": "ground_wet_slowdown",
+    "eta_minutes": 165.7,
+    "eta_source": "model",
+    "is_anomalous": true,
+    "beh_score": -0.5855,
+    "beh_source": "model"
+  },
+  {
+    "scene": "safety_event",
+    "eta_minutes": 166.7,
+    "eta_source": "model",
+    "is_anomalous": true,
+    "beh_score": -0.5762,
+    "beh_source": "model"
+  },
+  {
+    "scene": "safety_recovery",
+    "eta_minutes": 165.7,
+    "eta_source": "model",
+    "is_anomalous": true,
+    "beh_score": -0.5818,
+    "beh_source": "model"
+  },
+  {
+    "scene": "recovery",
+    "eta_minutes": 121.2,
+    "eta_source": "model",
+    "is_anomalous": false,
+    "beh_score": -0.5124,
+    "beh_source": "model"
+  },
+  {
+    "scene": "recovery",
+    "eta_minutes": 120.5,
+    "eta_source": "model",
+    "is_anomalous": false,
+    "beh_score": -0.4989,
+    "beh_source": "model"
+  },
+  {
+    "scene": "recovery",
+    "eta_minutes": 113.7,
+    "eta_source": "model",
+    "is_anomalous": false,
+    "beh_score": -0.5239,
+    "beh_source": "model"
+  },
+  {
+    "scene": "anomaly_high_idle",
+    "eta_minutes": 105.2,
+    "eta_source": "model",
+    "is_anomalous": true,
+    "beh_score": -0.7,
+    "beh_source": "fallback"
+  },
+  {
+    "scene": "task_completion",
+    "eta_minutes": 73.6,
+    "eta_source": "model",
+    "is_anomalous": false,
+    "beh_score": -0.5069,
+    "beh_source": "model"
+  }
+]
