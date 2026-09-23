@@ -77,21 +77,15 @@ def get_incident(event_id: str, request: Request):
         
     return events.iloc[0].to_dict()
 
-@router.post("/events/{event_id}/summarize", response_model=SummaryOut)
-def summarize_incident(event_id: str, request: Request):
+def summarize_safety_event(df, event_id: str) -> dict:
     from app.schemas import SummaryOut
     from app import gemini_client
     
-    df = request.app.state.data.get("safety_events")
-    if df is None or df.empty:
-        raise HTTPException(status_code=404, detail="Safety events data not found")
-        
     events = df[df['event_id'] == event_id]
     if events.empty:
-        raise HTTPException(status_code=404, detail=f"Safety event {event_id} not found")
+        return None
         
     row = events.iloc[0].to_dict()
-    
     prompt = f"""Write a one-paragraph summary of the following safety incident:
 Event Type: {row.get('event_type')}
 Severity: {row.get('severity')}
@@ -105,4 +99,16 @@ Operator Note: {row.get('note', 'None')}
     except gemini_client.GeminiUnavailable:
         summary = f"At {row.get('timestamp')}, a {row.get('severity')} {row.get('event_type')} was detected on {row.get('machine_id')}. Operator note: {row.get('note', 'None')}."
         return {"event_id": event_id, "summary": summary, "source": "fallback"}
+
+@router.post("/events/{event_id}/summarize", response_model=SummaryOut)
+def summarize_incident(event_id: str, request: Request):
+    df = request.app.state.data.get("safety_events")
+    if df is None or df.empty:
+        raise HTTPException(status_code=404, detail="Safety events data not found")
+        
+    result = summarize_safety_event(df, event_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Safety event {event_id} not found")
+        
+    return result
 

@@ -157,3 +157,9 @@ class SummaryOut(BaseSchema):
     event_id: str
     summary: str
     source: Literal["gemini", "fallback"]
+
+class SceneOut(BaseSchema):
+    scene_index: int
+    scene_name: str
+    total_scenes: int
+    payload: dict
