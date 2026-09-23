@@ -1,7 +1,9 @@
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.data_loader import load_all
+from app.error_handlers import register_error_handlers
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +20,23 @@ async def lifespan(app: FastAPI):
     logger.info("Application shutdown.")
 
 app = FastAPI(title="CAT Operator AI Companion API", lifespan=lifespan)
+
+# Setup CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Register standardized error handlers
+register_error_handlers(app)
 
 @app.get("/health")
 def health_check():

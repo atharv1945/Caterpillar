@@ -5,13 +5,21 @@ import math
 class BaseSchema(BaseModel):
     @model_validator(mode='before')
     @classmethod
-    def clean_nans(cls, data: Any) -> Any:
+    def clean_data(cls, data: Any) -> Any:
         if isinstance(data, dict):
             import pandas as pd
             cleaned = {}
             for k, v in data.items():
                 if pd.isna(v):
                     cleaned[k] = None
+                elif k in ['timestamp', 'scheduled_start', 'scheduled_end', 'idle_start', 'idle_end', 'checkpoint_time'] and isinstance(v, str) and v:
+                    try:
+                        # Convert to ISO 8601 string format
+                        cleaned[k] = pd.to_datetime(v).isoformat()
+                    except Exception:
+                        cleaned[k] = v
+                elif isinstance(v, str) and v.upper() in ['TRUE', 'FALSE'] and (k == "proximity_alert" or k == "resolved" or k == "triggered" or k == "is_anomalous"):
+                    cleaned[k] = v.upper() == 'TRUE'
                 else:
                     cleaned[k] = v
             return cleaned
