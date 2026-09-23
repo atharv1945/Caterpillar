@@ -1,0 +1,10 @@
+idle_event_id,machine_id,operator_id,task_id,idle_start,idle_end,duration_min,idle_reason_code,reason_source
+IDL000,EXC001,OP001,TSK003,2024-09-23 10:30:00,2024-09-23 10:48:00,18,waiting_truck,operator_confirmed
+IDL001,EXC001,OP002,TSK004,2024-09-12 22:36:00,2024-09-12 22:44:00,8,weather,operator_confirmed
+IDL002,EXC001,OP001,TSK002,2024-08-27 04:38:00,2024-08-27 04:49:00,11,weather,operator_confirmed
+IDL003,EXC001,OP001,TSK001,2024-08-31 23:17:00,2024-08-31 23:33:00,16,mechanical,system_inferred
+IDL004,EXC001,OP001,TSK002,2024-08-27 04:38:00,2024-08-27 04:49:00,11,other,operator_confirmed
+IDL005,EXC001,OP001,TSK002,2024-09-10 02:37:00,2024-09-10 02:49:00,12,mechanical,operator_confirmed
+IDL006,EXC001,OP002,TSK004,2024-08-31 00:04:00,2024-08-31 00:59:00,55,scheduled_break,system_inferred
+IDL007,EXC001,OP002,TSK004,2024-09-19 23:15:00,2024-09-20 00:11:00,56,mechanical,operator_confirmed
+IDL008,EXC001,OP001,TSK001,2024-09-06 00:32:00,2024-09-06 00:43:00,11,waiting_truck,system_inferred

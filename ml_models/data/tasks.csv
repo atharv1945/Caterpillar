@@ -1,0 +1,5 @@
+task_id,machine_id,operator_id,task_name,zone,scheduled_start,scheduled_end,status
+TSK001,EXC001,OP002,Site Clearing — Zone A,Zone-A,2024-09-23 04:00:00,2024-09-23 05:30:00,Completed
+TSK002,EXC001,OP001,Trench Excavation — Zone B,Zone-B,2024-09-23 05:30:00,2024-09-23 07:30:00,Completed
+TSK003,EXC001,OP001,Foundation Dig — Zone C,Zone-C,2024-09-23 08:00:00,2024-09-23 16:30:00,In Progress
+TSK004,EXC001,OP002,Material Loading — Zone D,Zone-D,2024-09-23 17:00:00,2024-09-23 20:00:00,Scheduled
