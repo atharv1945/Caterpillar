@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", "Inter", system-ui, sans-serif;
+
+  /* CAT brand anchor */
+  --color-cat-yellow: #ffcd11;
+  --color-cat-yellow-dim: #d9ad00;
+  --color-cat-black: #101114;
+
+  /* App surfaces (dark cabin display) */
+  --color-bg: #0b0d10;
+  --color-surface: #16181d;
+  --color-surface-2: #1e2128;
+  --color-border: #2a2e37;
+
+  /* Severity system */
+  --color-critical: #ef4444;
+  --color-critical-dim: #7f1d1d;
+  --color-attention: #ffcd11;
+  --color-attention-dim: #7a5c00;
+  --color-info: #3b82f6;
+  --color-info-dim: #1e3a6b;
+  --color-success: #22c55e;
+  --color-success-dim: #14532d;
+
+  --color-ink: #f3f4f6;
+  --color-ink-dim: #9aa0ab;
+
+  --animate-breathe: breathe 4s ease-in-out infinite;
+  --animate-blink: blink 5s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-shake: shake 0.42s ease-in-out infinite;
+
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.045); }
+  }
+  @keyframes blink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.08); }
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.85); opacity: 0.7; }
+    70% { transform: scale(1.55); opacity: 0; }
+    100% { transform: scale(1.55); opacity: 0; }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    25% { transform: translateX(-3px) rotate(-2deg); }
+    75% { transform: translateX(3px) rotate(2deg); }
+  }
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+.glass {
+  background: color-mix(in oklab, var(--color-surface) 82%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
