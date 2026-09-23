@@ -134,3 +134,26 @@ class BehaviorInsightOut(BaseSchema):
     score: float
     source: str
     message: str
+
+class TranslateIn(BaseSchema):
+    text: str
+    target_language: str
+    phrase_key: Optional[str] = None
+
+class TranslateOut(BaseSchema):
+    translated_text: str
+    source: Literal["gemini", "fallback"]
+
+class VoiceQAIn(BaseSchema):
+    question: str
+    language: str
+    context: Optional[str] = None
+
+class VoiceQAOut(BaseSchema):
+    answer: str
+    source: Literal["gemini", "fallback"]
+
+class SummaryOut(BaseSchema):
+    event_id: str
+    summary: str
+    source: Literal["gemini", "fallback"]

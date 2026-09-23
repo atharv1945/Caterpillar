@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
-from app.schemas import SafetyAlertOut, IncidentLogIn, IncidentOut
+from app.schemas import SafetyAlertOut, IncidentLogIn, IncidentOut, SummaryOut
 from app.filters import latest_golden_row
 from app.rules import evaluate_safety
 from app.store import update_row, persist
@@ -76,4 +76,33 @@ def get_incident(event_id: str, request: Request):
         raise HTTPException(status_code=404, detail=f"Safety event {event_id} not found")
         
     return events.iloc[0].to_dict()
+
+@router.post("/events/{event_id}/summarize", response_model=SummaryOut)
+def summarize_incident(event_id: str, request: Request):
+    from app.schemas import SummaryOut
+    from app import gemini_client
+    
+    df = request.app.state.data.get("safety_events")
+    if df is None or df.empty:
+        raise HTTPException(status_code=404, detail="Safety events data not found")
+        
+    events = df[df['event_id'] == event_id]
+    if events.empty:
+        raise HTTPException(status_code=404, detail=f"Safety event {event_id} not found")
+        
+    row = events.iloc[0].to_dict()
+    
+    prompt = f"""Write a one-paragraph summary of the following safety incident:
+Event Type: {row.get('event_type')}
+Severity: {row.get('severity')}
+Machine ID: {row.get('machine_id')}
+Timestamp: {row.get('timestamp')}
+Operator Note: {row.get('note', 'None')}
+"""
+    try:
+        summary = gemini_client.call_gemini(prompt)
+        return {"event_id": event_id, "summary": summary.strip(), "source": "gemini"}
+    except gemini_client.GeminiUnavailable:
+        summary = f"At {row.get('timestamp')}, a {row.get('severity')} {row.get('event_type')} was detected on {row.get('machine_id')}. Operator note: {row.get('note', 'None')}."
+        return {"event_id": event_id, "summary": summary, "source": "fallback"}
 
