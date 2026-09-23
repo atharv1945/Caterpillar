@@ -121,3 +121,16 @@ class IncidentOut(BaseSchema):
     severity: str
     resolved: bool
     note: Optional[str] = None
+
+class EtaOut(BaseSchema):
+    task_id: str
+    eta_minutes: float
+    source: str
+    explanation: str
+
+class BehaviorInsightOut(BaseSchema):
+    task_id: str
+    is_anomalous: bool
+    score: float
+    source: str
+    message: str
