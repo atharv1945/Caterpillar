@@ -23,6 +23,9 @@ app = FastAPI(title="CAT Operator AI Companion API", lifespan=lifespan)
 def health_check():
     return {"status": "ok"}
 
-# TODO: Add routers for other endpoints (Phase 2)
-# from app.api import tasks, safety, ...
-# app.include_router(tasks.router, prefix="/api/tasks")
+from app.routers import operators, machines, tasks, telemetry
+
+app.include_router(operators.router, prefix="/operators", tags=["operators"])
+app.include_router(machines.router, prefix="/machines", tags=["machines"])
+app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
+app.include_router(telemetry.router, prefix="/telemetry", tags=["telemetry"])
