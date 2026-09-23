@@ -4,3 +4,5 @@ pandas
 python-multipart
 google-genai
 python-dotenv
+pytest
+httpx

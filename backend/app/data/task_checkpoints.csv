@@ -3,3 +3,5 @@ TSK002,12:00:00,50.0,12,"Paused for lunch, ground is a bit rocky",pause,OP1001
 TSK002,12:45:00,50.0,12,Resuming after lunch,resume,OP1001
 TSK001,2026-09-23 23:59:51,68.0,17,holding for grading crew,pause,OP1001
 TSK001,2026-09-24 00:01:42,68.0,17,holding for grading crew,pause,OP1001
+TSK001,2026-09-24 00:44:11,65.5,25,Testing integration,pause,OP1001
+TSK001,2026-09-24 00:44:57,65.5,25,Testing integration,pause,OP1001
