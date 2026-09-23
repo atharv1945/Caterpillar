@@ -1,0 +1,3 @@
+task_id,checkpoint_time,progress_pct,cycles_completed,notes,event_type,operator_id
+TSK002,12:00:00,50,12,"Paused for lunch, ground is a bit rocky",pause,OP1001
+TSK002,12:45:00,50,12,Resuming after lunch,resume,OP1001

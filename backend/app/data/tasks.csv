@@ -1,0 +1,5 @@
+task_id,machine_id,operator_id,task_name,zone,scheduled_start,scheduled_end,status
+TSK001,EXC001,OP1001,Morning Excavation,Zone A,08:00,10:30,completed
+TSK002,EXC001,OP1001,Trenching,Zone B,10:45,12:30,in_progress
+TSK003,EXC001,OP1001,Site Grading,Zone C,13:30,15:00,scheduled
+TSK004,EXC001,OP1001,Material Loading,Zone D,15:15,17:00,scheduled
