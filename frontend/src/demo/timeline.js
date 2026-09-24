@@ -18,6 +18,14 @@ export const CRITICAL_AUTO_RESOLVE_MS = 4000;
 export const POST_COMPLETE_DELAY_MS = 8000;
 export const TRAINING_DISPLAY_MS = 16000;
 
+// How long the mid-shift behavior-insight caption holds before yielding back
+// to the normal cascade (weather/ack/etc). A fixed real-time window, not tied
+// to `elapsed`, so it's always visible for the same duration regardless of
+// exactly when the operator acknowledges the idle prompt.
+export const BEHAVIOR_INSIGHT_DISPLAY_MS = 4000;
+export const MID_SHIFT_INSIGHT_FALLBACK =
+  "That idle stretch was a bit longer than usual — worth keeping an eye on.";
+
 // Every "this looks like it came from a model" number here is wrapped in
 // getValueOrFallback — the model outputs are null stand-ins for a teammate's
 // not-yet-wired ETA/behavior model; the fallback is what plays live tonight.

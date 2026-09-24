@@ -23,6 +23,7 @@ export default function ChatOverlay({ open, onClose, liveTask }) {
   const [askedIds, setAskedIds] = useState([]);
   const [thinking, setThinking] = useState(false);
   const [language, setLanguage] = useState("en");
+  const [textInput, setTextInput] = useState("");
 
   const { sttSupported, ttsSupported, hasNativeVoice, listening, startListening, stopListening, speak } =
     useSpeech({ language });
@@ -98,7 +99,22 @@ export default function ChatOverlay({ open, onClose, liveTask }) {
     }
   }
 
+  // ── Typed free-text — submits through the exact same sendQuestion path
+  // as voice input and quick-questions, so behavior is consistent regardless
+  // of how the operator asked. ───────────────────────────────────────────
+  function handleTextSubmit(e) {
+    e.preventDefault();
+    const text = textInput.trim();
+    if (!text || thinking) return;
+    setTextInput("");
+    sendQuestion(text);
+  }
+
   // ── Microphone toggle — STT via Web Speech API ────────────────────────
+  // Explicit push-to-talk: tap once to start listening, tap the SAME button
+  // again to stop — stopping finalizes whatever was captured and submits it
+  // through the same sendQuestion path (native SpeechRecognition.stop()
+  // fires one last onresult with the final transcript before onend).
   function toggleMic() {
     if (listening) {
       stopListening();
@@ -220,28 +236,46 @@ export default function ChatOverlay({ open, onClose, liveTask }) {
               </div>
             )}
 
-            {/* Mic / input bar */}
+            {/* Text input + push-to-talk mic bar */}
             <div className="shrink-0 px-5 pb-6">
-              <button
-                onClick={toggleMic}
-                disabled={thinking}
-                className={`flex w-full items-center gap-2 rounded-full border px-4 py-3 transition-colors ${
-                  listening
-                    ? "border-cat-yellow/40 bg-cat-yellow/10 text-cat-yellow"
-                    : thinking
-                    ? "border-white/5 bg-surface text-ink-dim opacity-50 cursor-not-allowed"
-                    : "border-white/10 bg-surface-2 text-ink-dim"
-                }`}
-              >
-                <Icon name="mic" size={16} />
-                <span className="text-sm">
-                  {listening
-                    ? "Listening…"
-                    : thinking
-                    ? "Thinking…"
-                    : "Tap to ask a question…"}
-                </span>
-              </button>
+              {(thinking || listening) && (
+                <p className="mb-2 px-1 text-xs font-medium text-ink-dim">
+                  {thinking ? "Thinking…" : "Listening — tap the mic again to stop and send"}
+                </p>
+              )}
+              <form onSubmit={handleTextSubmit} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Type a question…"
+                  disabled={thinking}
+                  className="flex-1 rounded-full border border-white/10 bg-surface-2 px-4 py-3 text-sm text-ink placeholder:text-ink-dim outline-none focus:border-cat-yellow/40 disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={thinking || !textInput.trim()}
+                  aria-label="Send"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cat-yellow text-cat-black transition-opacity disabled:opacity-30"
+                >
+                  <Icon name="send" size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleMic}
+                  disabled={thinking}
+                  aria-label={listening ? "Stop and send" : "Start voice question"}
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                    listening
+                      ? "border-cat-yellow/40 bg-cat-yellow/10 text-cat-yellow"
+                      : thinking
+                      ? "border-white/5 bg-surface text-ink-dim opacity-50 cursor-not-allowed"
+                      : "border-white/10 bg-surface-2 text-ink-dim"
+                  }`}
+                >
+                  <Icon name={listening ? "stop" : "mic"} size={16} filled={listening} />
+                </button>
+              </form>
             </div>
           </motion.div>
         </motion.div>

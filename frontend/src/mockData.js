@@ -135,13 +135,34 @@ export const safety_events = [
   },
 ];
 
+// `category` groups these for the Training Center's category list. The two
+// extra entries mirror what's already seeded in the backend's own
+// training_content.csv (TR001/TR002) — surfacing existing data, not a new
+// taxonomy.
 export const training_content = [
   {
     content_id: "TRN001",
     title: "Trench Safety Protocols — 90 Second Refresher",
+    category: "Safety",
     language: "en",
     video_url_or_path: "/training/trench-safety.mp4",
     duration_min: 2,
+  },
+  {
+    content_id: "TR001",
+    title: "Excavator Basics",
+    category: "Excavator",
+    language: "en",
+    video_url_or_path: "/static/training/excavator_basics_en.mp4",
+    duration_min: 3,
+  },
+  {
+    content_id: "TR002",
+    title: "Safety Guidelines",
+    category: "Safety",
+    language: "hi",
+    video_url_or_path: "/static/training/safety_guidelines_hi.mp4",
+    duration_min: 3,
   },
 ];
 

@@ -11,6 +11,11 @@ const DOCK_TRANSITION = { duration: 0.56, ease: [0.22, 1, 0.36, 1] };
 // the layoutId handoff lands with no visible correction.
 const DOCKED_SIZE_PX = 140;
 
+// Matches the "Good morning!" TypeOnText call below (startDelay 0.35,
+// wordDelay 0.09, 2 words, 0.22s per-word fade) — the moment the last word
+// finishes animating in, plus a small margin.
+const GREETING_TYPED_MS = 700;
+
 // Bob's opening beat, prepended ahead of the live shift as its own skippable
 // intro. One motion.div (layoutId shared with BottomRightBob) persists across
 // the centered → docked layout change AND across the handoff into the
@@ -18,13 +23,22 @@ const DOCKED_SIZE_PX = 140;
 // instead of two mascots cutting/refading — this is also what fixes Bob
 // resting top-right instead of bottom-right once the intro settles.
 export default function IntroSequence({ onComplete }) {
+  const [greetingTyped, setGreetingTyped] = useState(false);
   const [docked, setDocked] = useState(false);
   const [showDockedCaption, setShowDockedCaption] = useState(false);
 
+  // Once the greeting has finished typing on, hold here indefinitely —
+  // no auto-advance. The move-to-dock animation only starts once the
+  // operator taps (see handleTapToContinue below).
   useEffect(() => {
-    const holdTimer = setTimeout(() => setDocked(true), 1700);
-    return () => clearTimeout(holdTimer);
+    const t = setTimeout(() => setGreetingTyped(true), GREETING_TYPED_MS);
+    return () => clearTimeout(t);
   }, []);
+
+  function handleTapToContinue() {
+    if (!greetingTyped || docked) return;
+    setDocked(true);
+  }
 
   // Auto-hand off into the live shift shortly after Bob finishes speaking —
   // no presenter click needed, this now reads as one continuous app boot.
@@ -45,7 +59,7 @@ export default function IntroSequence({ onComplete }) {
       };
 
   return (
-    <div className="fixed inset-0 z-40 overflow-hidden">
+    <div className="fixed inset-0 z-40 overflow-hidden" onClick={handleTapToContinue}>
       {/* backdrop hides Home while centered, fades away as Bob docks so the
           home screen reads as fading in behind him */}
       <motion.div
@@ -102,6 +116,24 @@ export default function IntroSequence({ onComplete }) {
             <div className="glass rounded-2xl border border-white/10 px-6 py-3 text-xl font-bold text-ink shadow-xl">
               <TypeOnText text="Good morning!" startDelay={0.35} wordDelay={0.09} />
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Subtle, unobtrusive tap affordance — appears only once the greeting
+          has finished typing on, and holds (no timeout) until tapped. */}
+      <AnimatePresence>
+        {!docked && greetingTyped && (
+          <motion.div
+            key="intro-tap-hint"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.35, 0.9, 0.35] }}
+            exit={{ opacity: 0, transition: { duration: 0.15 } }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-x-0 flex justify-center px-6"
+            style={{ top: `calc(50% + ${CENTER_SIZE / 2 + 74}px)` }}
+          >
+            <span className="text-xs font-bold uppercase tracking-widest text-ink-dim">Tap to continue</span>
           </motion.div>
         )}
       </AnimatePresence>

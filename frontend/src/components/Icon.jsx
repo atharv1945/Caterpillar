@@ -103,6 +103,7 @@ const paths = {
   ),
   zap: <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" />,
   send: <path d="M4 12l16-8-6 16-3-6-7-2z" />,
+  stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
 };
 
 export default function Icon({ name, size = 24, className = "", strokeWidth = 2, filled = false }) {

@@ -11,11 +11,14 @@ import {
   POST_COMPLETE_DELAY_MS,
   TRAINING_DISPLAY_MS,
   RECOVERY_MILESTONES,
+  BEHAVIOR_INSIGHT_DISPLAY_MS,
+  MID_SHIFT_INSIGHT_FALLBACK,
 } from "./timeline";
 import { tasks, bob_captions } from "../mockData";
 import IntroSequence from "./IntroSequence";
 import BottomRightBob from "../components/BottomRightBob";
 import ChatOverlay from "../components/ChatOverlay";
+import TrainingCenterOverlay from "../components/TrainingCenterOverlay";
 import Icon from "../components/Icon";
 import Home from "../screens/Home";
 import TaskDetail from "../screens/TaskDetail";
@@ -72,6 +75,10 @@ export default function LiveController() {
   const [criticalOverlayOpen, setCriticalOverlayOpen] = useState(false);
   const [criticalAcked, setCriticalAcked] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  // Deliberately NOT added to pausedRef below — Training Center is a
+  // standalone side excursion, not a blocking demo overlay, so the elapsed
+  // clock keeps ticking (and idle/critical can still fire) while it's open.
+  const [trainingCenterOpen, setTrainingCenterOpen] = useState(false);
 
   // Real backend data, layered over the local timeline.js computation via
   // getValueOrFallback — null means "no good backend answer yet," which
@@ -83,6 +90,13 @@ export default function LiveController() {
   const [backendSafety, setBackendSafety] = useState(null);
   const [backendBriefing, setBackendBriefing] = useState(null);
   const backendIdleEventIdRef = useRef(null);
+
+  // Mid-shift behavior-insight beat — same real model endpoint as the
+  // end-of-shift summary (it only needs the current golden telemetry row, so
+  // it's valid to query right after the idle event resolves too), just
+  // surfaced as its own short-lived caption instead of waiting for shift end.
+  const [midShiftBehaviorMessage, setMidShiftBehaviorMessage] = useState(null);
+  const [showBehaviorInsight, setShowBehaviorInsight] = useState(false);
 
   const pausedRef = useRef(false);
 
@@ -184,7 +198,23 @@ export default function LiveController() {
     if (backendEventId && backendReasonCode) {
       api.postIdleReason(backendEventId, backendReasonCode);
     }
+    setShowBehaviorInsight(true);
+    setTimeout(() => setShowBehaviorInsight(false), BEHAVIOR_INSIGHT_DISPLAY_MS);
   }, []);
+
+  // Real behavior-insight data for the mid-shift beat — fetched once as soon
+  // as the idle event resolves (boolean-keyed, not `elapsed`, so it only
+  // fires once per idle event).
+  useEffect(() => {
+    if (!idleAcked) return;
+    let cancelled = false;
+    api.getBehaviorInsight(BACKEND_TASK_ID).then((res) => {
+      if (!cancelled) setMidShiftBehaviorMessage(res?.message ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [idleAcked]);
 
   const resolveCritical = useCallback(() => {
     setCriticalAcked(true);
@@ -258,12 +288,15 @@ export default function LiveController() {
     setCriticalOverlayOpen(false);
     setCriticalAcked(false);
     setChatOpen(false);
+    setTrainingCenterOpen(false);
     setBackendEta(null);
     setBackendBehaviorMessage(null);
     setBackendIdleDuration(null);
     setBackendSafety(null);
     setBackendBriefing(null);
     backendIdleEventIdRef.current = null;
+    setMidShiftBehaviorMessage(null);
+    setShowBehaviorInsight(false);
   }, []);
 
   // Hidden recovery control — force the next key moment to happen right now.
@@ -355,6 +388,9 @@ export default function LiveController() {
   });
   if (isComplete && currentScreen !== "training" && currentScreen !== "resume") {
     caption = getValueOrFallback(backendBehaviorMessage, caption);
+  } else if (showBehaviorInsight) {
+    caption = getValueOrFallback(midShiftBehaviorMessage, MID_SHIFT_INSIGHT_FALLBACK);
+    derivedBobState = "warning";
   }
   const bobState = idleOverlayOpen ? "listening" : criticalOverlayOpen ? "critical" : derivedBobState;
 
@@ -372,6 +408,7 @@ export default function LiveController() {
 
   const showBottomBob = phase === "live" && !idleOverlayOpen && !criticalOverlayOpen && !chatOpen;
 
+
   return (
     <div className="min-h-screen bg-bg pb-64">
       {/* Hidden dev recovery hotspot — invisible, top-left, never branded */}
@@ -386,7 +423,12 @@ export default function LiveController() {
         <AnimatePresence mode="wait">
           {currentScreen === "home" && (
             <motion.div key="home" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3, ease: "easeOut" }}>
-              <Home now={liveTask} onOpenTask={() => setCurrentScreen("task")} onOpenTraining={() => setCurrentScreen("training")} />
+              <Home
+                now={liveTask}
+                isComplete={isComplete}
+                onOpenTask={() => setCurrentScreen("task")}
+                onOpenTraining={() => setCurrentScreen("training")}
+              />
             </motion.div>
           )}
           {currentScreen === "task" && (
@@ -433,7 +475,26 @@ export default function LiveController() {
 
       {showBottomBob && <BottomRightBob state={bobState} caption={caption} onTap={() => setChatOpen(true)} />}
 
+      {/* Small, persistent sidebar entry point — reachable from Home/TaskDetail
+          only, deliberately not a hamburger menu with many options. */}
+      {phase === "live" &&
+        (currentScreen === "home" || currentScreen === "task") &&
+        !idleOverlayOpen &&
+        !criticalOverlayOpen &&
+        !chatOpen &&
+        !trainingCenterOpen && (
+          <button
+            onClick={() => setTrainingCenterOpen(true)}
+            aria-label="Open Training Center"
+            className="fixed right-4 top-6 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-surface-2 text-cat-yellow shadow-lg sm:right-6"
+          >
+            <Icon name="video" size={20} />
+          </button>
+        )}
+
       <ChatOverlay open={chatOpen} onClose={() => setChatOpen(false)} liveTask={liveTask} />
+
+      <TrainingCenterOverlay open={trainingCenterOpen} onClose={() => setTrainingCenterOpen(false)} />
 
       {phase === "intro" && <IntroSequence onComplete={() => setPhase("live")} />}
     </div>
