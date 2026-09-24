@@ -57,4 +57,7 @@ export const api = {
   getResumeBriefing: (taskId) => apiGet(`/tasks/${taskId}/resume`),
   postIdleReason: (idleEventId, reasonCode) => apiPost(`/idle_events/${idleEventId}/reason`, { reason_code: reasonCode }),
   logIncident: (eventId, note) => apiPost(`/safety/events/${eventId}/log_incident`, { note }),
+  // 20 s timeout: Gemini round-trips can take several seconds; the backend times out at 15s.
+  voiceQA: (question, language, context) =>
+    apiPost(`/voice/qa`, { question, language, context: context ?? null }, { timeout: 20_000 }),
 };

@@ -1,4 +1,5 @@
 import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -7,6 +8,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+# Safe key-presence check — NEVER log the key value itself
+logging.getLogger(__name__).info(
+    "GEMINI_API_KEY loaded: %s", "true" if GEMINI_API_KEY else "false (Gemini fallbacks will be used)"
+)
 
 # Golden row count config for telemetry
 GOLDEN_ROW_COUNT = 18
