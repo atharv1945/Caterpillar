@@ -13,7 +13,11 @@ export const WEATHER_T = 30; // rain moves in shortly after idle is resolved
 export const SAFETY_T = 58; // seatbelt/proximity event
 export const COMPLETE_T = 90; // task finishes
 
-export const POST_COMPLETE_DELAY_MS = 8000;
+// Fallback-only: fires the auto-nav to Training if the operator hasn't
+// started Task 2 by then. Must stay after TASK2_READY_DELAY_T (10s) so the
+// "Ready to start" card has a real window to be seen and tapped on Home
+// before Training sweeps the screen away.
+export const TRAINING_AUTO_NAV_DELAY_MS = 14000;
 export const TRAINING_DISPLAY_MS = 16000;
 
 // How long the mid-shift behavior-insight caption holds before yielding back

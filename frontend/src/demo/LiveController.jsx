@@ -6,7 +6,7 @@ import {
   IDLE_THRESHOLD_T,
   SAFETY_T,
   COMPLETE_T,
-  POST_COMPLETE_DELAY_MS,
+  TRAINING_AUTO_NAV_DELAY_MS,
   TRAINING_DISPLAY_MS,
   RECOVERY_MILESTONES,
   BEHAVIOR_INSIGHT_DISPLAY_MS,
@@ -243,12 +243,19 @@ export default function LiveController() {
   // Keyed on the derived boolean (not `elapsed` itself, which changes every
   // second) — otherwise the timeout's cleanup fires on the very next tick
   // and cancels it before the delay ever elapses.
+  //
+  // This is a fallback path only — if the operator starts Task 2 before it
+  // fires, `task2StartElapsed` flips from null to a number, this effect
+  // re-runs, sees Task 2 is now active, and returns early WITHOUT
+  // scheduling a new timeout; the cleanup from the previous run already
+  // cancelled the pending one. So starting Task 2 in time suppresses the
+  // auto-nav entirely, rather than it firing on top of Task 2 regardless.
   const isComplete = elapsed >= COMPLETE_T;
   useEffect(() => {
-    if (!isComplete) return;
-    const t = setTimeout(() => setCurrentScreen("training"), POST_COMPLETE_DELAY_MS);
+    if (!isComplete || task2StartElapsed != null) return;
+    const t = setTimeout(() => setCurrentScreen("training"), TRAINING_AUTO_NAV_DELAY_MS);
     return () => clearTimeout(t);
-  }, [isComplete]);
+  }, [isComplete, task2StartElapsed]);
 
   // Real behavior-insight data, fetched once as soon as the task completes.
   useEffect(() => {
@@ -477,7 +484,7 @@ export default function LiveController() {
           )}
           {currentScreen === "resume" && (
             <motion.div key="resume" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3, ease: "easeOut" }}>
-              <ResumeHandover caption={caption} ctaLabel="Restart Demo" onContinue={resetAll} briefing={resumeBriefing} />
+              <ResumeHandover caption={caption} ctaLabel="Checkout" onContinue={resetAll} briefing={resumeBriefing} />
             </motion.div>
           )}
         </AnimatePresence>
