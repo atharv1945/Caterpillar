@@ -13,8 +13,6 @@ export const WEATHER_T = 30; // rain moves in shortly after idle is resolved
 export const SAFETY_T = 58; // seatbelt/proximity event
 export const COMPLETE_T = 90; // task finishes
 
-export const IDLE_AUTO_RESOLVE_MS = 5000;
-export const CRITICAL_AUTO_RESOLVE_MS = 4000;
 export const POST_COMPLETE_DELAY_MS = 8000;
 export const TRAINING_DISPLAY_MS = 16000;
 
@@ -43,19 +41,19 @@ const KEYFRAMES = [
   { t: COMPLETE_T, progress: 100, eta: 0, cycles: 49 },
 ];
 
-function interpolate(elapsed, key) {
+function interpolate(elapsed, key, keyframes = KEYFRAMES) {
   const t = Math.max(0, elapsed);
-  if (t <= KEYFRAMES[0].t) return KEYFRAMES[0][key];
-  for (let i = 0; i < KEYFRAMES.length - 1; i++) {
-    const a = KEYFRAMES[i];
-    const b = KEYFRAMES[i + 1];
+  if (t <= keyframes[0].t) return keyframes[0][key];
+  for (let i = 0; i < keyframes.length - 1; i++) {
+    const a = keyframes[i];
+    const b = keyframes[i + 1];
     if (t >= a.t && t <= b.t) {
       const span = b.t - a.t;
       const ratio = span === 0 ? 1 : (t - a.t) / span;
       return a[key] + (b[key] - a[key]) * ratio;
     }
   }
-  return KEYFRAMES[KEYFRAMES.length - 1][key];
+  return keyframes[keyframes.length - 1][key];
 }
 
 function idleMinutesAt(elapsed) {
@@ -128,3 +126,37 @@ export const IDLE_REASON_ACK_CAPTIONS = {
 };
 
 export const RECOVERY_MILESTONES = [IDLE_THRESHOLD_T, WEATHER_T, SAFETY_T, COMPLETE_T];
+
+// ── Task 2 (Trench Backfill) — a second, deliberately simpler live cycle ──
+// Starts only after the operator taps the "Ready to start" card, so it runs
+// on its own elapsed-since-start baseline rather than the shift's main
+// `elapsed` origin. No idle/critical/weather beats — just a basic
+// progress/ETA curve, since this only needs to demonstrate a second task
+// going live, not the full richness of task 1.
+export const TASK2_READY_DELAY_T = 10; // seconds after task 1 completes
+export const TASK2_COMPLETE_T = 45;
+
+const TASK2_KEYFRAMES = [
+  { t: 0, progress: 0, eta: 40, cycles: 0 },
+  { t: TASK2_COMPLETE_T, progress: 100, eta: 0, cycles: 22 },
+];
+
+export function getTask2Snapshot(task2Elapsed) {
+  const progress = Math.round(
+    getValueOrFallback(interpolate(task2Elapsed, "progress", TASK2_KEYFRAMES), 0, { min: 0, max: 100 })
+  );
+  const eta = Math.round(
+    getValueOrFallback(interpolate(task2Elapsed, "eta", TASK2_KEYFRAMES), 40, { min: 0, max: 200 })
+  );
+  const cycles = Math.round(interpolate(task2Elapsed, "cycles", TASK2_KEYFRAMES));
+
+  return {
+    progress_pct: progress,
+    eta_min: eta,
+    load_cycles: cycles,
+    idling_time_min: 0,
+    weather_condition: "Clear",
+    ground_condition: "Dry",
+    why: "Standard backfill pace for Zone B.",
+  };
+}

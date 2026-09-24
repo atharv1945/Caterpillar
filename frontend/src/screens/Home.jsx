@@ -23,7 +23,16 @@ function hhmm() {
 // intentionally non-interactive here — tapping one surfaces a small toast
 // instead of opening the live TaskDetail view, which would otherwise show
 // TSK001's numbers under a different task's name.
-export default function Home({ now = defaultNow, isComplete = false, onOpenTask, onOpenTraining }) {
+export default function Home({
+  now = defaultNow,
+  isComplete = false,
+  showNowCard = true,
+  completedTask = null,
+  task2Ready = false,
+  onStartTask2,
+  onOpenTask,
+  onOpenTraining,
+}) {
   const [toast, setToast] = useState(null);
   const toastTimerRef = useRef(null);
 
@@ -60,7 +69,7 @@ export default function Home({ now = defaultNow, isComplete = false, onOpenTask,
         </div>
       </div>
 
-      {!isComplete ? (
+      {showNowCard ? (
         <>
           <p className="px-1 text-xs font-bold uppercase tracking-widest text-ink-dim">Now</p>
           <motion.button
@@ -103,34 +112,46 @@ export default function Home({ now = defaultNow, isComplete = false, onOpenTask,
             <p className="text-sm font-semibold text-ink">No active task right now</p>
             <p className="text-xs text-ink-dim">Today's excavation task is complete — nice work.</p>
           </div>
-
-          <p className="px-1 text-xs font-bold uppercase tracking-widest text-ink-dim">Completed Today</p>
-          <button
-            onClick={() => onOpenTask(now)}
-            className="flex items-center justify-between rounded-2xl border border-success/20 bg-success/5 p-4 text-left"
-          >
-            <div>
-              <p className="font-bold text-ink">{now.task_name}</p>
-              <p className="text-xs font-medium text-ink-dim">{now.zone} · {now.progress_pct}% complete</p>
-            </div>
-            <Icon name="check" className="text-success" size={20} />
-          </button>
         </>
       )}
 
-      {next && (
+      {isComplete && completedTask && (
+        <>
+          <p className="px-1 text-xs font-bold uppercase tracking-widest text-ink-dim">Completed Today</p>
+          {/* Not tappable — LiveController's "task" screen always shows
+              whichever task is currently live, so routing this into it would
+              show the wrong task once Task 2 has started. */}
+          <div className="flex items-center justify-between rounded-2xl border border-success/20 bg-success/5 p-4">
+            <div>
+              <p className="font-bold text-ink">{completedTask.task_name}</p>
+              <p className="text-xs font-medium text-ink-dim">{completedTask.zone} · {completedTask.progress_pct}% complete</p>
+            </div>
+            <Icon name="check" className="text-success" size={20} />
+          </div>
+        </>
+      )}
+
+      {next && !(isComplete && showNowCard) && (
         <>
           <p className="px-1 text-xs font-bold uppercase tracking-widest text-ink-dim">Next</p>
           <motion.button
-            onClick={showNotStartedToast}
+            onClick={task2Ready ? onStartTask2 : showNotStartedToast}
             whileTap={{ scale: 0.985 }}
-            className="flex items-center justify-between rounded-2xl border border-white/10 bg-surface p-4 text-left shadow-lg"
+            className={`flex items-center justify-between rounded-2xl border p-4 text-left shadow-lg ${
+              task2Ready ? "border-cat-yellow/40 bg-cat-yellow/10" : "border-white/10 bg-surface"
+            }`}
           >
             <div>
               <p className="font-bold text-ink">{next.task_name}</p>
               <p className="text-xs font-medium text-ink-dim">{next.zone} · starts {next.scheduled_start}</p>
             </div>
-            <Icon name="chevron" className="text-ink-dim" size={20} />
+            {task2Ready ? (
+              <span className="shrink-0 rounded-full bg-cat-yellow px-3 py-1.5 text-xs font-extrabold text-cat-black">
+                Ready to start
+              </span>
+            ) : (
+              <Icon name="chevron" className="text-ink-dim" size={20} />
+            )}
           </motion.button>
         </>
       )}

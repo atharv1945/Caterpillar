@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import TypeOnText from "./TypeOnText";
 
@@ -27,6 +28,22 @@ export default function MascotBob({
   const isListening = state === "listening";
   const isCoaching = state === "coaching";
 
+  // Pulse plays exactly 3 cycles per state occurrence, then holds steady at
+  // the same "lit" frame the pulse starts/ends on — looping forever read as
+  // distracting over a long state. `pulseGen` forces a fresh mount (and so a
+  // fresh repeat count) each time `state` actually changes, including
+  // re-entering the same state after a demo reset.
+  const [pulseSettled, setPulseSettled] = useState(false);
+  const [pulseGen, setPulseGen] = useState(0);
+  const prevStateRef = useRef(state);
+  useEffect(() => {
+    if (prevStateRef.current !== state) {
+      prevStateRef.current = state;
+      setPulseSettled(false);
+      setPulseGen((g) => g + 1);
+    }
+  }, [state]);
+
   return (
     <div className={`flex flex-col items-center gap-3 ${className}`}>
       {showCaption && caption && (
@@ -48,12 +65,25 @@ export default function MascotBob({
         className="relative"
       >
         {cfg.glow && (
-          <motion.span
-            className="absolute inset-0 rounded-full"
-            style={{ background: cfg.glow, filter: "blur(6px)" }}
-            animate={{ scale: [0.85, 1.5, 1.5], opacity: [0.55, 0, 0] }}
-            transition={{ duration: cfg.pulseSpeed, repeat: Infinity, ease: "easeOut" }}
-          />
+          pulseSettled ? (
+            // Steady hold — same color/opacity/scale as the pulse's shared
+            // start/end ("lit") keyframe, so settling into this never reads
+            // as a snap.
+            <span
+              key={`glow-settled-${pulseGen}`}
+              className="absolute inset-0 rounded-full"
+              style={{ background: cfg.glow, filter: "blur(6px)", opacity: 0.55, transform: "scale(0.85)" }}
+            />
+          ) : (
+            <motion.span
+              key={`glow-pulse-${pulseGen}`}
+              className="absolute inset-0 rounded-full"
+              style={{ background: cfg.glow, filter: "blur(6px)" }}
+              animate={{ scale: [0.85, 1.5, 1.5, 0.85], opacity: [0.55, 0, 0, 0.55] }}
+              transition={{ duration: cfg.pulseSpeed, repeat: 3, ease: "easeOut" }}
+              onAnimationComplete={() => setPulseSettled(true)}
+            />
+          )
         )}
 
         <motion.svg

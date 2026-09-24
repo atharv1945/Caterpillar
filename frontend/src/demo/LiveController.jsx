@@ -6,13 +6,13 @@ import {
   IDLE_THRESHOLD_T,
   SAFETY_T,
   COMPLETE_T,
-  IDLE_AUTO_RESOLVE_MS,
-  CRITICAL_AUTO_RESOLVE_MS,
   POST_COMPLETE_DELAY_MS,
   TRAINING_DISPLAY_MS,
   RECOVERY_MILESTONES,
   BEHAVIOR_INSIGHT_DISPLAY_MS,
   MID_SHIFT_INSIGHT_FALLBACK,
+  TASK2_READY_DELAY_T,
+  getTask2Snapshot,
 } from "./timeline";
 import { tasks, bob_captions } from "../mockData";
 import IntroSequence from "./IntroSequence";
@@ -31,6 +31,7 @@ import { api } from "../utils/api";
 import { getValueOrFallback } from "../utils/getValueOrFallback";
 
 const BASE_TASK = tasks.find((t) => t.status === "NOW");
+const BASE_TASK2 = tasks.find((t) => t.task_id === "T002"); // Trench Backfill
 
 // The backend's demo data is only wired up for TSK001 (ml_bridge, scene_state,
 // and the golden telemetry rows all hardcode it as "the" live task) — even
@@ -79,6 +80,11 @@ export default function LiveController() {
   // standalone side excursion, not a blocking demo overlay, so the elapsed
   // clock keeps ticking (and idle/critical can still fire) while it's open.
   const [trainingCenterOpen, setTrainingCenterOpen] = useState(false);
+
+  // Task 2 (Trench Backfill) — runs off its own baseline captured from the
+  // main `elapsed` clock at the moment it's started, rather than a second
+  // interval/timer. null = not started yet.
+  const [task2StartElapsed, setTask2StartElapsed] = useState(null);
 
   // Real backend data, layered over the local timeline.js computation via
   // getValueOrFallback — null means "no good backend answer yet," which
@@ -222,19 +228,15 @@ export default function LiveController() {
     api.logIncident(BACKEND_SAFETY_EVENT_ID, "Operator confirmed seatbelt fastened.");
   }, []);
 
-  // A real operator might not tap in time — auto-resolve so the shift keeps
-  // moving, same safety-net spirit as the getValueOrFallback numbers.
-  useEffect(() => {
-    if (!idleOverlayOpen) return;
-    const t = setTimeout(resolveIdle, IDLE_AUTO_RESOLVE_MS);
-    return () => clearTimeout(t);
-  }, [idleOverlayOpen, resolveIdle]);
+  // Starts Task 2's own live cycle, baselined to the current moment on the
+  // main clock — task2Elapsed is derived as elapsed - task2StartElapsed.
+  const startTask2 = useCallback(() => setTask2StartElapsed(elapsed), [elapsed]);
 
-  useEffect(() => {
-    if (!criticalOverlayOpen) return;
-    const t = setTimeout(resolveCritical, CRITICAL_AUTO_RESOLVE_MS);
-    return () => clearTimeout(t);
-  }, [criticalOverlayOpen, resolveCritical]);
+  // No auto-resolve timers — both overlays (and the paused clock) stay open
+  // until the operator explicitly taps a reason chip + Confirm, or the
+  // acknowledge button. resolveIdle/resolveCritical are still called on that
+  // real tap, and by the hidden dev recovery shortcut on demand; neither
+  // ever fires on its own.
 
   // Task completion → training → handover, each a timed hand-off rather
   // than a manual click, framed as "the shift moving itself forward."
@@ -289,6 +291,7 @@ export default function LiveController() {
     setCriticalAcked(false);
     setChatOpen(false);
     setTrainingCenterOpen(false);
+    setTask2StartElapsed(null);
     setBackendEta(null);
     setBackendBehaviorMessage(null);
     setBackendIdleDuration(null);
@@ -377,6 +380,16 @@ export default function LiveController() {
   );
   const liveTask = { ...BASE_TASK, ...localSnapshot, eta_min: resolvedEta };
 
+  // Task 2 (Trench Backfill) — deliberately no backend blending, no
+  // idle/critical/weather beats; a simple local progress/ETA curve is
+  // enough to demonstrate a second task going live.
+  const task2Active = task2StartElapsed != null;
+  const task2Elapsed = task2Active ? Math.max(0, elapsed - task2StartElapsed) : 0;
+  const liveTask2 = task2Active ? { ...BASE_TASK2, ...getTask2Snapshot(task2Elapsed) } : null;
+  const task2Ready = isComplete && !task2Active && elapsed - COMPLETE_T >= TASK2_READY_DELAY_T;
+  const activeNow = task2Active ? liveTask2 : liveTask;
+  const showNowCard = !isComplete || task2Active;
+
   let { caption, bobState: derivedBobState } = getLiveCaption({
     screen: currentScreen,
     elapsed,
@@ -424,8 +437,12 @@ export default function LiveController() {
           {currentScreen === "home" && (
             <motion.div key="home" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3, ease: "easeOut" }}>
               <Home
-                now={liveTask}
+                now={activeNow}
                 isComplete={isComplete}
+                showNowCard={showNowCard}
+                completedTask={isComplete ? liveTask : null}
+                task2Ready={task2Ready}
+                onStartTask2={startTask2}
                 onOpenTask={() => setCurrentScreen("task")}
                 onOpenTraining={() => setCurrentScreen("training")}
               />
@@ -441,7 +458,7 @@ export default function LiveController() {
                 <Icon name="arrow-left" size={20} />
               </button>
               <TaskDetail
-                task={liveTask}
+                task={activeNow}
                 recommendation={elapsed >= COMPLETE_T ? "Take the 2-minute Trench Safety Protocols refresher before tomorrow's shift in Zone A." : undefined}
               />
             </motion.div>
