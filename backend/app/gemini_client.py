@@ -9,7 +9,7 @@ class GeminiUnavailable(Exception):
 def _do_call(prompt: str) -> str:
     client = genai.Client(api_key=GEMINI_API_KEY)
     response = client.models.generate_content(
-        model='gemini-3.6-flash',
+        model='gemini-3.5-flash',
         contents=prompt
     )
     return response.text
