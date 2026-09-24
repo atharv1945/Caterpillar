@@ -24,11 +24,24 @@ export default function ChatOverlay({ open, onClose, liveTask }) {
   const [thinking, setThinking] = useState(false);
   const [language, setLanguage] = useState("en");
 
-  const { sttSupported, ttsSupported, listening, startListening, stopListening, speak } =
+  const { sttSupported, ttsSupported, hasNativeVoice, listening, startListening, stopListening, speak } =
     useSpeech({ language });
 
   // Track the last Bob reply for TTS — we only want to speak the newest one
   const lastBobTextRef = useRef(null);
+
+  // Warn if native voice is missing when switching languages
+  useEffect(() => {
+    if (language !== "en" && !hasNativeVoice && ttsSupported) {
+      setMessages((m) => [
+        ...m,
+        {
+          from: "bob",
+          text: `Your device doesn't have a ${language.toUpperCase()} voice installed. I can understand you, but I won't be able to speak the replies out loud properly.`,
+        },
+      ]);
+    }
+  }, [language, hasNativeVoice, ttsSupported]);
 
   // ── Shared "send a question, await Bob's reply" logic ─────────────────
   const sendQuestion = useCallback(

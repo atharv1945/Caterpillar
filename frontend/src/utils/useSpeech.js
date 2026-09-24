@@ -175,6 +175,7 @@ export function useSpeech({ language = "en" } = {}) {
   return {
     sttSupported,
     ttsSupported,
+    hasNativeVoice: pickVoice(bcp47) !== null,
     listening,
     transcript,
     sttError,

@@ -8,7 +8,14 @@ router = APIRouter()
 @router.post("/qa", response_model=VoiceQAOut)
 def voice_qa(req: VoiceQAIn):
     context_str = f"\nContext: {req.context}" if req.context else ""
-    prompt = f"You are a helpful AI companion for a heavy machinery operator. Answer their question briefly in {req.language}. Question: {req.question}{context_str}"
+    if req.language == "hi":
+        lang_instruction = "natural conversational Hinglish (Hindi mixed with common English construction terms, written in Devanagari script but using casual vocabulary like 'task', 'complete', 'status')"
+    elif req.language == "ta":
+        lang_instruction = "natural conversational Tanglish (Tamil mixed with common English construction terms, written in Tamil script but using casual vocabulary like 'task', 'complete', 'status')"
+    else:
+        lang_instruction = "English"
+
+    prompt = f"You are a helpful AI companion for a heavy machinery operator. Answer their question briefly in {lang_instruction}. Question: {req.question}{context_str}"
     
     try:
         answer = gemini_client.call_gemini(prompt)
