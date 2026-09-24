@@ -32,6 +32,7 @@ export default function Home({
   onStartTask2,
   onOpenTask,
   onOpenTraining,
+  onCheckout,
 }) {
   const [toast, setToast] = useState(null);
   const toastTimerRef = useRef(null);
@@ -180,6 +181,21 @@ export default function Home({
             ))}
           </div>
         </>
+      )}
+
+      {/* Manual, operator-initiated handover — replaces the old timed
+          auto-nav into the checkout screen. Shown once the shift's main
+          task has wrapped, so it doesn't sweep the operator away from Home
+          on its own. */}
+      {isComplete && (
+        <motion.button
+          onClick={onCheckout}
+          whileTap={{ scale: 0.985 }}
+          className="flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-cat-yellow text-base font-extrabold text-cat-black shadow-lg"
+        >
+          Checkout
+          <Icon name="arrow-right" size={18} />
+        </motion.button>
       )}
     </div>
   );

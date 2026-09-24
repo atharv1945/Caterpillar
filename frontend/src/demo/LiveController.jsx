@@ -7,7 +7,6 @@ import {
   SAFETY_T,
   COMPLETE_T,
   TRAINING_AUTO_NAV_DELAY_MS,
-  TRAINING_DISPLAY_MS,
   RECOVERY_MILESTONES,
   BEHAVIOR_INSIGHT_DISPLAY_MS,
   MID_SHIFT_INSIGHT_FALLBACK,
@@ -269,11 +268,10 @@ export default function LiveController() {
     };
   }, [isComplete]);
 
-  useEffect(() => {
-    if (currentScreen !== "training") return;
-    const t = setTimeout(() => setCurrentScreen("resume"), TRAINING_DISPLAY_MS);
-    return () => clearTimeout(t);
-  }, [currentScreen]);
+  // No auto-nav from training into the checkout/handover screen — that jump
+  // used to fire on a timer regardless of what the operator was doing.
+  // Reaching "resume" is now only ever a deliberate action: the Checkout
+  // button on Home (see onCheckout below), or the hidden dev shortcut.
 
   // Real resume-briefing data, fetched once as the handover screen mounts.
   useEffect(() => {
@@ -452,6 +450,7 @@ export default function LiveController() {
                 onStartTask2={startTask2}
                 onOpenTask={() => setCurrentScreen("task")}
                 onOpenTraining={() => setCurrentScreen("training")}
+                onCheckout={() => setCurrentScreen("resume")}
               />
             </motion.div>
           )}

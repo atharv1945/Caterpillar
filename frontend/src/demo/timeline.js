@@ -18,7 +18,6 @@ export const COMPLETE_T = 90; // task finishes
 // "Ready to start" card has a real window to be seen and tapped on Home
 // before Training sweeps the screen away.
 export const TRAINING_AUTO_NAV_DELAY_MS = 14000;
-export const TRAINING_DISPLAY_MS = 16000;
 
 // How long the mid-shift behavior-insight caption holds before yielding back
 // to the normal cascade (weather/ack/etc). A fixed real-time window, not tied
